@@ -1,6 +1,11 @@
+import sys
 import pandas as pd
+
+print(sys.argv)
+
+date = sys.argv[1]
 
 # ETL
 # TODO
 
-print("Job is finished!")
+print(f'Job is finished! for date = {date}')
