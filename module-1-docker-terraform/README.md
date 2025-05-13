@@ -6,7 +6,7 @@ The different "systems" of a ETL/ELT process can be run from seperate Docker con
 
 Running an ETL (Extract, Transform, Load) script within a Docker container is best practice in many real-world data engineering and DevOps workflows. Here's why:
 
-## Why it makes sense:
+## Why use containers:
 
 - Isolation: Docker ensures the ETL script runs in a clean, isolated environment with all its dependencies (Python version, libraries, credentials, etc.), avoiding "it works on my machine" issues.
 
@@ -39,7 +39,7 @@ Building an image in this directory\_
 
     docker build -t <image name> .
 
-## Example Dockerfile:
+## Creating our own Dockerfile:
 
 You might have a Dockerfile like this:
 
@@ -58,3 +58,32 @@ Then build and run it:
 
     docker build -t my-etl-job .
     docker run my-etl-job
+
+## Running a postgres container
+
+This is the command used in the postgres video to startup a docker container running postgres.
+
+    docker run -it \
+    -e POSTGRES_USER="root" \
+    -e POSTGRES_PASSWORD="root" \
+    -e POSTGRES_DB="ny_taxi" \
+    -v $(pwd)/ny_taxi_postgres_data:/var/lib/postgresql/data \
+    -p 5432:5432 \
+    postgres:13
+
+It is important to set the environmental variables by inputting them with the -e flag.
+
+- **docker run -it** Runs an interactive (-it) container so you can see logs and interact with it in the terminal.
+
+- **-e POSTGRES_USER="root"** Sets the username for the database superuser to "root".
+
+- **-e POSTGRES_PASSWORD="root"** Sets the password for the "root" user.
+
+- **-e POSTGRES_DB="ny_taxi"** Creates a new database called ny_taxi on startup.
+
+- **-v $(pwd)/ny_taxi_postgres_data:/var/lib/postgresql/data**
+  Mounts a volume from your current directory (ny_taxi_postgres_data) to the container's PostgreSQL data directory, enabling data persistence.
+
+- **-p 5432:5432** Forwards port 5432 on your machine to port 5432 in the container so you can access PostgreSQL from outside the container (e.g., with DBeaver, pgAdmin, or a script).
+
+- **postgres:13** Specifies the Docker image to use: PostgreSQL version 13.
