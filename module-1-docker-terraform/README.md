@@ -87,3 +87,111 @@ It is important to set the environmental variables by inputting them with the -e
 - **-p 5432:5432** Forwards port 5432 on your machine to port 5432 in the container so you can access PostgreSQL from outside the container (e.g., with DBeaver, pgAdmin, or a script).
 
 - **postgres:13** Specifies the Docker image to use: PostgreSQL version 13.
+
+#### Remember not to put the /ny_taxi_postgres_data folder in your git!
+
+## Using pgcli to access the postgres database
+
+First install the pgcli package if needed:
+
+    pip install pgcli
+
+Then run it to connect to the postgres database running in the container:
+
+    pgcli -h localhost -p 5432 -u root -d ny_taxi
+
+This shows us that a connection is working. You can list tables by running:
+
+    \dt
+
+but unfortunately we have have no data or tables to look at. Let's work on that!
+
+## Using Jupyter Notebook to ingest data
+
+Here we learn how to use Jupyter Notebook to look at the data and we ingest data with the use of the pandas library.
+
+We can start Jupyter Notebook with the following command:
+
+    jupyter notebook
+
+    # if jupyter is not installed run pip install jupyter
+
+We now download the taxi data:
+
+    wget https://github.com/DataTalksClub/nyc-tlc-data/releases/download/yellow/yellow_tripdata_2021-01.csv.gz
+
+We can read this file with the read_csv pandas function:
+
+    df = pd.read_csv('yellow_tripdata_2021-01.csv', nrows=100)
+
+To change panda columns to datetime we can parse them by running:
+
+    df.tpep_pickup_datetime = pd.to_datetime(df.tpep_pickup_datetime)
+    df.tpep_dropoff_datetime = pd.to_datetime(df.tpep_dropoff_datetime)
+
+Now we need to get the schema (DDL statement) by running:
+
+    print(pd.io.sql.get_schema(df, name="yellow-taxi-data"))
+
+    CREATE TABLE "yellow-taxi-data" (
+        "VendorID" INTEGER,
+        "tpep_pickup_datetime" TIMESTAMP,
+        "tpep_dropoff_datetime" TIMESTAMP,
+        "passenger_count" INTEGER,
+        "trip_distance" REAL,
+        "RatecodeID" INTEGER,
+        "store_and_fwd_flag" TEXT,
+        "PULocationID" INTEGER,
+        "DOLocationID" INTEGER,
+        "payment_type" INTEGER,
+        "fare_amount" REAL,
+        "extra" REAL,
+        "mta_tax" REAL,
+        "tip_amount" REAL,
+        "tolls_amount" REAL,
+        "improvement_surcharge" REAL,
+        "total_amount" REAL,
+        "congestion_surcharge" REAL
+    )
+
+Pandas uses a library called SQLAlchemy to communicate with SQL databases. We can import this by running:
+
+    from sqlalchemy import create_engine
+
+Then we can create a engine object:
+
+    engine = create_engine('postgresql://root:root@localhost:5432/ny_taxi')
+
+This gave me the following error:
+ModuleNotFoundError: No module named 'psycopg2
+which we can solved by running:
+
+    pip install psycopg2-binary
+
+We can test the connect by running:
+
+    engine.connect()
+
+Now we can use the engine variable to add inside of the pd.io.sql.get_schema call to get the correct format for our type of database:
+
+    print(pd.io.sql.get_schema(df, name="yellow-taxi-data", con=engine))
+
+We can now create an iterator to :
+
+    df_iter = pd.read_csv('yellow_tripdata_2021-01.csv', iterator=True, chunksize=100000)
+
+Now we can keep reading from the dataset until an exception gets thrown. Not the most elegant way to do this but it works!
+
+    from time import time
+
+    while True:
+        t_start = time()
+
+        df = next(df_iter)
+        df.tpep_pickup_datetime = pd.to_datetime(df.tpep_pickup_datetime)
+        df.tpep_dropoff_datetime = pd.to_datetime(df.tpep_dropoff_datetime)
+        df.to_sql(name='yellow_taxi_data', con=engine, if_exists='append')
+
+        t_end = time()
+
+        print('Inserted another chunk. It took %.3f second ' % (t_end - t_start))
