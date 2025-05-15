@@ -195,3 +195,72 @@ Now we can keep reading from the dataset until an exception gets thrown. Not the
         t_end = time()
 
         print('Inserted another chunk. It took %.3f second ' % (t_end - t_start))
+
+If you feel this was a bit to dirty, you can add a try catch block:
+
+    while True:
+        t_start = time()
+
+        try:
+            df = next(df_iter)
+            df.tpep_pickup_datetime = pd.to_datetime(df.tpep_pickup_datetime)
+            df.tpep_dropoff_datetime = pd.to_datetime(df.tpep_dropoff_datetime)
+            df.to_sql(name='yellow_taxi_data', con=engine, if_exists='append')
+
+            t_end = time()
+
+            print('Inserted another chunk. It took %.3f second ' % (t_end - t_start))
+
+        except StopIteration:
+            print("No more data to process.")
+            break
+        except Exception as e:
+            print("An error occurred:", e)
+            break
+
+## Time to use pgadmin instead of pgcli
+
+pgcli is great and all, but working in the command prompt can be a bit tedious. If you prefer working within a GUI then pgadmin is a great choice! We can start up a docker container running pgadmin4 like this:
+
+    docker run -it \
+        -e PGADMIN_DEFAULT_EMAIL="admin@admin.com" \
+        -e PGADMIN_DEFAULT_PASSWORD="root" \
+        -p 8080:80 \
+        dpage/pgadmin4
+
+Unfortunately, we cannot connect to the postgres container from the pgadmin container. If we try connecting to the postgres database from pgadmin using localhost as host name we get an error! This is because localhost means that pgadmin tries to look for the database on its own container.
+
+To be able to connect it we need to link the two containers. We can use this by using a docker network. We need to close both running contains and create a new docker network by running:
+
+    docker network create pg-network
+
+Now we need to start up both containers again, with the added flags called --network and --name. Network provides the network name to connect to, and name is the name used as hostname for the container.
+
+    docker run -it \
+    -e POSTGRES_USER="root" \
+    -e POSTGRES_PASSWORD="root" \
+    -e POSTGRES_DB="ny_taxi" \
+    -v $(pwd)/ny_taxi_postgres_data:/var/lib/postgresql/data \
+    -p 5432:5432 \
+    --network=pg-network \
+    --name=pg-database \
+    postgres:13
+
+And the samae for pgadmin:
+
+    docker run -it \
+        -e PGADMIN_DEFAULT_EMAIL="admin@admin.com" \
+        -e PGADMIN_DEFAULT_PASSWORD="root" \
+        -p 8080:80 \
+        --network=pg-network \
+        --name=pg-database \
+        dpage/pgadmin4
+
+Now create the connection to the postgres database in pgadmin with pg-database as the hostname. You should be able to connect now.
+Pretty awesome right? Well, yes but still quite tedious, but luckily there is a solution to this, Docker compose! But more on that a bit later.
+
+## Dockerizing our ingestion script
+
+Coming up
+
+## Docker compose
