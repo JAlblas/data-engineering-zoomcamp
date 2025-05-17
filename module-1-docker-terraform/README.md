@@ -388,3 +388,69 @@ Now it is time to run this container:
 Let's move on.
 
 ## Docker compose
+
+Well, that worked quite well. We have these 3 docker run commands:
+
+    docker run -it \
+        -e POSTGRES_USER="root" \
+        -e POSTGRES_PASSWORD="root" \
+        -e POSTGRES_DB="ny_taxi" \
+        -v $(pwd)/ny_taxi_postgres_data:/var/lib/postgresql/data \
+        -p 5432:5432 \
+        --network=pg-network \
+        --name=pg-database \
+        postgres:13
+
+    docker run -it \
+        -e PGADMIN_DEFAULT_EMAIL="admin@admin.com" \
+        -e PGADMIN_DEFAULT_PASSWORD="root" \
+        -p 8080:80 \
+        --network=pg-network \
+        --name=pg-database \
+        dpage/pgadmin4
+
+    docker run -it \
+        --network=pg-network \
+        taxi_ingest:v001 \
+        --user=root \
+        --password=root \
+        --host=pg-database \
+        --port=5432 \
+        --db=ny_taxi \
+        --table_name=yellow_taxi_trips \
+        --url="https://github.com/DataTalksClub/nyc-tlc-data/releases/download/yellow/yellow_tripdata_2021-01.csv.gz"
+
+Even through this works, it is quite tedious having to enter all these commands everytime. Luckily we can do all these configurations in one file using Docker Compose. As an added benefit, all containers will automatically run on the same network.
+
+To get started we need to create a docker-compose.yaml file looking like this:
+
+    services:
+    pgdatabase:
+        image: postgres:13
+        environment:
+            - POSTGRES_USER=root
+            - POSTGRES_PASSWORD=root
+            - POSTGRES_DB=ny_taxi
+        volumes:
+            - "./ny_taxi_postgres_data:/var/lib/postgresql/data:rw"
+        ports:
+            - "5432:5432"
+    pgadmin:
+        image: dpage/pgadmin4
+        environment:
+            - PGADMIN_DEFAULT_EMAIL=admin@admin.com
+            - PGADMIN_DEFAULT_PASSWORD=root
+        volumes:
+            - "./private/var/lib/pgadmin:/var/lib/pgadmin"
+        ports:
+        - "8080:80"
+
+We can now run these docker contains together by running:
+
+    docker compose up
+
+We can use the -d flag to run in detached mode, meaning we get the terminal back. After we are done we can close down all containers cleanly by running:
+
+    docker compose down
+
+That's all there is to it!
