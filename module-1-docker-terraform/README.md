@@ -265,7 +265,7 @@ In this video we refactor our jupyter notebook file to a regular python script u
 
     jupyter nbconvert --to=script upload-data.ipynb
 
-We then continue using argparse to make the script dynamic by enabling us to enter command line arguments through the use of docker run environmental variables. The finished code looks like this:
+We then continue using argparse to make the script dynamic by enabling us to enter command line arguments when calling the script in the terminal. The finished code looks like this:
 
     #!/usr/bin/env python
     # coding: utf-8
@@ -340,7 +340,7 @@ We then continue using argparse to make the script dynamic by enabling us to ent
 
         main(args)
 
-Note that the create_engine now uses the parsed arguments to create the connection string.
+Note that the create_engine now uses the parsed arguments to create the connection string. Also, I changed the read_csv call to include the compression argument since the file we will download is gzip compressed.
 
 Note that the file download is currently is:
 https://github.com/DataTalksClub/nyc-tlc-data/releases/download/yellow/yellow_tripdata_2021-01.csv.gz
@@ -355,5 +355,36 @@ We can run the python script like so:
         --db=ny_taxi \
         --table_name=yellow_taxi_trips \
         --url="https://github.com/DataTalksClub/nyc-tlc-data/releases/download/yellow/yellow_tripdata_2021-01.csv.gz"
+
+Now, it is time to dockerize this script! We simply upgrade the previously made dockerfile:
+
+    FROM python:3.9.1
+
+    RUN apt-get install wget
+    RUN pip install pandas sqlalchemy psycopg2
+
+    WORKDIR /app
+    COPY ingest_data.py pipeline.py
+
+    ENTRYPOINT [ "python", "pipeline.py" ]
+
+We changed the name of the python file to copy into the container, as well as installing wget, and pip installing sqlalchemy an psycopg2. Now, we can build this image by running:
+
+    docker build -t taxi_ingest:v001 .
+
+Now it is time to run this container:
+
+    docker run -it \
+        --network=pg-network \
+        taxi_ingest:v001 \
+        --user=root \
+        --password=root \
+        --host=pg-database \
+        --port=5432 \
+        --db=ny_taxi \
+        --table_name=yellow_taxi_trips \
+        --url="https://github.com/DataTalksClub/nyc-tlc-data/releases/download/yellow/yellow_tripdata_2021-01.csv.gz"
+
+Let's move on.
 
 ## Docker compose
