@@ -18,13 +18,17 @@ def main(params):
     table_name = params.table_name
     url = params.url
     csv_name = 'output.csv'
+    zipped = params.zipped
 
     # download the CSV file
     os.system(f"wget {url} -O {csv_name}")
 
     engine = create_engine(f'postgresql://{user}:{password}@{host}:{port}/{db}')
 
-    df_iter = pd.read_csv(csv_name, iterator=True, chunksize=100000, compression='gzip')
+    if zipped == 'y' or zipped == 'Y':
+        df_iter = pd.read_csv(csv_name, iterator=True, chunksize=100000, compression='gzip')
+    else:
+        df_iter = pd.read_csv(csv_name, iterator=True, chunksize=100000)
 
     df = next(df_iter)
 
@@ -68,6 +72,7 @@ if __name__ == '__main__':
     parser.add_argument('--db', help='database name for postgres')
     parser.add_argument('--table_name', help='name of the table where we will write the results to')
     parser.add_argument('--url', help='url of the csv file')
+    parser.add_argument('--zipped', help="zipped? y/n")
 
     args = parser.parse_args()
 
