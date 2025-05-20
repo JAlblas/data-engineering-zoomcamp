@@ -681,3 +681,61 @@ Grouping by multiple fields
         "day" ASC,
         "DOLocationID" ASC
     LIMIT 100;
+
+## Terraform
+
+### Introduction
+
+What is Terraform?
+open-source tool by HashiCorp, used for provisioning infrastructure resources
+supports DevOps best practices for change management
+Managing configuration files in source control to maintain an ideal provisioning state for testing and production environments
+
+### What is IaC?
+
+Infrastructure-as-Code
+build, change, and manage your infrastructure in a safe, consistent, and repeatable way by defining resource configurations that you can version, reuse, and share.
+
+### Some advantages
+
+Infrastructure lifecycle management
+Version control commits
+Very useful for stack-based deployments, and with cloud providers such as AWS, GCP, Azure, K8S…
+State-based approach to track resource changes throughout deployments
+
+### Files
+
+main.tf
+variables.tf
+Optional: resources.tf, output.tf
+.tfstate
+
+### Declarations
+
+terraform: configure basic Terraform settings to provision your infrastructure
+required_version: minimum Terraform version to apply to your configuration
+backend: stores Terraform's "state" snapshots, to map real-world resources to your configuration.
+
+local: stores state file locally as terraform.tfstate
+required_providers: specifies the providers required by the current module
+
+provider: adds a set of resource types and/or data sources that Terraform can manage
+The Terraform Registry is the main directory of publicly available providers from most major infrastructure platforms.
+
+resource
+blocks to define components of your infrastructure
+Project modules/resources: google_storage_bucket, google_bigquery_dataset, google_bigquery_table
+
+variable & locals
+runtime arguments and constants
+
+### Execution steps
+
+terraform init:
+Initializes & configures the backend, installs plugins/providers, & checks out an existing configuration from a version control
+terraform plan:
+Matches/previews local changes against a remote state, and proposes an Execution Plan.
+terraform apply:
+Asks for approval to the proposed plan, and applies changes to cloud
+terraform destroy
+Removes your stack from the Cloud
