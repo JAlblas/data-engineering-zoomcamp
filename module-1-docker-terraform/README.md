@@ -704,10 +704,10 @@ Grouping by multiple fields
 
 ### Files
 
-main.tf
-variables.tf
-Optional: resources.tf, output.tf
-.tfstate
+- main.tf
+- variables.tf
+- Optional: resources.tf, output.tf
+  .tfstate
 
 ### Declarations
 
@@ -757,19 +757,15 @@ For this course, we'll use a free version (upto EUR 300 credits).
 - Setup service account & authentication for this project
 - Grant Viewer role to begin with.
 - Download service-account-keys (.json) for auth.
-- Download SDK for local setup
+- Download SDK for local setup: https://cloud.google.com/sdk/docs/install-sdk
 - Set environment variable to point to your downloaded GCP keys:
   export GOOGLE_APPLICATION_CREDENTIALS="<path/to/your/service-account-authkeys>.json"
+- Create terraform files
+- terraform init, terraform plan, terraform apply,
 
-## Refresh token/session, and verify authentication
+## DELETE?
 
-- gcloud auth application-default login
-- Setup for Access
-  IAM Roles for Service account:
-
-Go to the IAM section of IAM & Admin https://console.cloud.google.com/iam-admin/iam
-Click the Edit principal icon for your service account.
-Add these roles in addition to Viewer : Storage Admin + Storage Object Admin + BigQuery Admin
+- ?
 
 Enable these APIs for your project:
 
