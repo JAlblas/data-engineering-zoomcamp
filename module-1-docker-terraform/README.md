@@ -63,6 +63,7 @@ Then build and run it:
 
 This is the command used in the postgres video to startup a docker container running postgres.
 
+```sh
     docker run -it \
     -e POSTGRES_USER="root" \
     -e POSTGRES_PASSWORD="root" \
@@ -70,6 +71,7 @@ This is the command used in the postgres video to startup a docker container run
     -v $(pwd)/ny_taxi_postgres_data:/var/lib/postgresql/data \
     -p 5432:5432 \
     postgres:13
+```
 
 It is important to set the environmental variables by inputting them with the -e flag.
 
@@ -178,10 +180,13 @@ Now we can use the engine variable to add inside of the pd.io.sql.get_schema cal
 
 We can now create an iterator to :
 
-    df_iter = pd.read_csv('yellow_tripdata_2021-01.csv', iterator=True, chunksize=100000)
+```py
+df_iter = pd.read_csv('yellow_tripdata_2021-01.csv', iterator=True, chunksize=100000)
+```
 
 Now we can keep reading from the dataset until an exception gets thrown. Not the most elegant way to do this but it works!
 
+```py
     from time import time
 
     while True:
@@ -195,9 +200,11 @@ Now we can keep reading from the dataset until an exception gets thrown. Not the
         t_end = time()
 
         print('Inserted another chunk. It took %.3f second ' % (t_end - t_start))
+```
 
 If you feel this was a bit to dirty, you can add a try catch block:
 
+```py
     while True:
         t_start = time()
 
@@ -217,16 +224,19 @@ If you feel this was a bit to dirty, you can add a try catch block:
         except Exception as e:
             print("An error occurred:", e)
             break
+```
 
 ## Time to use pgadmin instead of pgcli
 
 pgcli is great and all, but working in the command prompt can be a bit tedious. If you prefer working within a GUI then pgadmin is a great choice! We can start up a docker container running pgadmin4 like this:
 
+```sh
     docker run -it \
         -e PGADMIN_DEFAULT_EMAIL="admin@admin.com" \
         -e PGADMIN_DEFAULT_PASSWORD="root" \
         -p 8080:80 \
         dpage/pgadmin4
+```
 
 Unfortunately, we cannot connect to the postgres container from the pgadmin container. If we try connecting to the postgres database from pgadmin using localhost as host name we get an error! This is because localhost means that pgadmin tries to look for the database on its own container.
 
@@ -236,6 +246,7 @@ To be able to connect it we need to link the two containers. We can use this by 
 
 Now we need to start up both containers again, with the added flags called --network and --name. Network provides the network name to connect to, and name is the name used as hostname for the container.
 
+```sh
     docker run -it \
     -e POSTGRES_USER="root" \
     -e POSTGRES_PASSWORD="root" \
@@ -245,9 +256,11 @@ Now we need to start up both containers again, with the added flags called --net
     --network=pg-network \
     --name=pg-database \
     postgres:13
+```
 
 And the samae for pgadmin:
 
+```sh
     docker run -it \
         -e PGADMIN_DEFAULT_EMAIL="admin@admin.com" \
         -e PGADMIN_DEFAULT_PASSWORD="root" \
@@ -255,6 +268,7 @@ And the samae for pgadmin:
         --network=pg-network \
         --name=pg-database \
         dpage/pgadmin4
+```
 
 Now create the connection to the postgres database in pgadmin with pg-database as the hostname. You should be able to connect now.
 Pretty awesome right? Well, yes but still quite tedious, but luckily there is a solution to this, Docker compose! But more on that a bit later.
@@ -267,6 +281,7 @@ In this video we refactor our jupyter notebook file to a regular python script u
 
 We then continue using argparse to make the script dynamic by enabling us to enter command line arguments when calling the script in the terminal. The finished code looks like this:
 
+```py
     #!/usr/bin/env python
     # coding: utf-8
 
@@ -339,6 +354,7 @@ We then continue using argparse to make the script dynamic by enabling us to ent
         args = parser.parse_args()
 
         main(args)
+```
 
 Note that the create_engine now uses the parsed arguments to create the connection string. Also, I changed the read_csv call to include the compression argument since the file we will download is gzip compressed.
 
@@ -347,6 +363,7 @@ https://github.com/DataTalksClub/nyc-tlc-data/releases/download/yellow/yellow_tr
 
 We can run the python script like so:
 
+```
     python ingest_data.py \
         --user=root \
         --password=root \
@@ -355,9 +372,11 @@ We can run the python script like so:
         --db=ny_taxi \
         --table_name=yellow_taxi_trips \
         --url="https://github.com/DataTalksClub/nyc-tlc-data/releases/download/yellow/yellow_tripdata_2021-01.csv.gz"
+```
 
 Now, it is time to dockerize this script! We simply upgrade the previously made dockerfile:
 
+```
     FROM python:3.9.1
 
     RUN apt-get install wget
@@ -367,6 +386,7 @@ Now, it is time to dockerize this script! We simply upgrade the previously made 
     COPY ingest_data.py pipeline.py
 
     ENTRYPOINT [ "python", "pipeline.py" ]
+```
 
 We changed the name of the python file to copy into the container, as well as installing wget, and pip installing sqlalchemy an psycopg2. Now, we can build this image by running:
 
@@ -374,6 +394,7 @@ We changed the name of the python file to copy into the container, as well as in
 
 Now it is time to run this container:
 
+```sh
     docker run -it \
         --network=pg-network \
         taxi_ingest:v001 \
@@ -384,6 +405,7 @@ Now it is time to run this container:
         --db=ny_taxi \
         --table_name=yellow_taxi_trips \
         --url="https://github.com/DataTalksClub/nyc-tlc-data/releases/download/yellow/yellow_tripdata_2021-01.csv.gz"
+```
 
 Let's move on.
 
@@ -391,6 +413,7 @@ Let's move on.
 
 Well, that worked quite well. We have these 3 docker run commands:
 
+```shell
     docker run -it \
         -e POSTGRES_USER="root" \
         -e POSTGRES_PASSWORD="root" \
@@ -419,31 +442,34 @@ Well, that worked quite well. We have these 3 docker run commands:
         --db=ny_taxi \
         --table_name=yellow_taxi_trips \
         --url="https://github.com/DataTalksClub/nyc-tlc-data/releases/download/yellow/yellow_tripdata_2021-01.csv.gz"
+```
 
 Even through this works, it is quite tedious having to enter all these commands everytime. Luckily we can do all these configurations in one file using Docker Compose. As an added benefit, all containers will automatically run on the same network.
 
 To get started we need to create a docker-compose.yaml file looking like this:
 
-    services:
-    pgdatabase:
-        image: postgres:13
-        environment:
-            - POSTGRES_USER=root
-            - POSTGRES_PASSWORD=root
-            - POSTGRES_DB=ny_taxi
-        volumes:
-            - "./ny_taxi_postgres_data:/var/lib/postgresql/data:rw"
-        ports:
-            - "5432:5432"
-    pgadmin:
-        image: dpage/pgadmin4
-        environment:
-            - PGADMIN_DEFAULT_EMAIL=admin@admin.com
-            - PGADMIN_DEFAULT_PASSWORD=root
-        volumes:
-            - "./private/var/lib/pgadmin:/var/lib/pgadmin"
-        ports:
-        - "8080:80"
+```yaml
+services:
+pgdatabase:
+  image: postgres:13
+  environment:
+    - POSTGRES_USER=root
+    - POSTGRES_PASSWORD=root
+    - POSTGRES_DB=ny_taxi
+  volumes:
+    - "./ny_taxi_postgres_data:/var/lib/postgresql/data:rw"
+  ports:
+    - "5432:5432"
+pgadmin:
+  image: dpage/pgadmin4
+  environment:
+    - PGADMIN_DEFAULT_EMAIL=admin@admin.com
+    - PGADMIN_DEFAULT_PASSWORD=root
+  volumes:
+    - "./private/var/lib/pgadmin:/var/lib/pgadmin"
+  ports:
+    - "8080:80"
+```
 
 We can now run these docker contains together by running:
 
@@ -459,6 +485,7 @@ That's all there is to it!
 
 To download the zones file I had to change my logic in the code to allow for the use of an argument to indicate if the downloaded file is zipped or not. Here is the relevant part:
 
+```py
     def main(params):
         user = params.user
         password = params.password
@@ -481,13 +508,17 @@ To download the zones file I had to change my logic in the code to allow for the
             df_iter = pd.read_csv(csv_name, iterator=True, chunksize=100000)
 
         df = next(df_iter)
+```
 
 And:
 
+```sh
         parser.add_argument('--zipped', help="zipped? y/n")
+```
 
 Now build the image again and run it with the added argument:
 
+```sh
     docker run -it \
         --network=module-1-docker-terraform_default \
         taxi_ingest:v001 \
@@ -499,6 +530,7 @@ Now build the image again and run it with the added argument:
         --table_name=zones \
         --url="https://d37ci6vzurychx.cloudfront.net/misc/taxi_zone_lookup.csv" \
         --zipped=n
+```
 
 Also make sure the network fits the network created by the docker compose up command.
 
@@ -506,6 +538,7 @@ Also make sure the network fits the network created by the docker compose up com
 
 It is also possible to run the ETL script through docker compose. It could look something like this:
 
+```yaml
     services:
     pgdatabase:
         image: postgres:13
@@ -539,11 +572,13 @@ It is also possible to run the ETL script through docker compose. It could look 
         --table_name=zones
         --url=https://d37ci6vzurychx.cloudfront.net/misc/taxi_zone_lookup.csv
         --zipped=n
+```
 
 ## SQL Refresher
 
 Joining Yellow Taxi table with Zones Lookup table (implicit INNER JOIN)
 
+```sql
     SELECT
         tpep_pickup_datetime,
         tpep_dropoff_datetime,
@@ -558,9 +593,11 @@ Joining Yellow Taxi table with Zones Lookup table (implicit INNER JOIN)
         t."PULocationID" = zpu."LocationID"
         AND t."DOLocationID" = zdo."LocationID"
     LIMIT 100;
+```
 
 Joining Yellow Taxi table with Zones Lookup table (Explicit INNER JOIN)
 
+```sql
     SELECT
         tpep_pickup_datetime,
         tpep_dropoff_datetime,
@@ -575,9 +612,11 @@ Joining Yellow Taxi table with Zones Lookup table (Explicit INNER JOIN)
     JOIN
         zones zdo ON t."DOLocationID" = zdo."LocationID"
     LIMIT 100;
+```
 
 Checking for records with NULL Location IDs in the Yellow Taxi table
 
+```sql
     SELECT
         tpep_pickup_datetime,
         tpep_dropoff_datetime,
@@ -590,9 +629,11 @@ Checking for records with NULL Location IDs in the Yellow Taxi table
         "PULocationID" IS NULL
         OR "DOLocationID" IS NULL
     LIMIT 100;
+```
 
 Checking for Location IDs in the Zones table NOT IN the Yellow Taxi table
 
+```sql
     SELECT
         tpep_pickup_datetime,
         tpep_dropoff_datetime,
@@ -605,9 +646,11 @@ Checking for Location IDs in the Zones table NOT IN the Yellow Taxi table
         "DOLocationID" NOT IN (SELECT "LocationID" from zones)
         OR "PULocationID" NOT IN (SELECT "LocationID" from zones)
     LIMIT 100;
+```
 
 Using LEFT, RIGHT, and OUTER JOINS when some Location IDs are not in either Tables
 
+```sql
     DELETE FROM zones WHERE "LocationID" = 142;
 
     SELECT
@@ -649,9 +692,11 @@ Using LEFT, RIGHT, and OUTER JOINS when some Location IDs are not in either Tabl
     JOIN
         zones zdo ON t."DOLocationID" = zdo."LocationID"
     LIMIT 100;
+```
 
 Using GROUP BY to calculate number of trips per day
 
+```sql
     SELECT
         CAST(tpep_dropoff_datetime AS DATE) AS "day",
         COUNT(1)
@@ -661,9 +706,11 @@ Using GROUP BY to calculate number of trips per day
         CAST(tpep_dropoff_datetime AS DATE)
     LIMIT 100;
     Using ORDER BY to order the results of your query
+```
 
 -- Ordering by day
 
+```sql
     SELECT
         CAST(tpep_dropoff_datetime AS DATE) AS "day",
         COUNT(1)
@@ -674,9 +721,11 @@ Using GROUP BY to calculate number of trips per day
     ORDER BY
         "day" ASC
     LIMIT 100;
+```
 
 -- Ordering by count
 
+```sql
     SELECT
         CAST(tpep_dropoff_datetime AS DATE) AS "day",
         COUNT(1) AS "count"
@@ -687,9 +736,11 @@ Using GROUP BY to calculate number of trips per day
     ORDER BY
         "count" DESC
     LIMIT 100;
+```
 
 Other kinds of aggregations
 
+```sql
     SELECT
         CAST(tpep_dropoff_datetime AS DATE) AS "day",
         COUNT(1) AS "count",
@@ -702,9 +753,11 @@ Other kinds of aggregations
     ORDER BY
         "count" DESC
     LIMIT 100;
+```
 
 Grouping by multiple fields
 
+```sql
     SELECT
         CAST(tpep_dropoff_datetime AS DATE) AS "day",
         "DOLocationID",
@@ -719,6 +772,7 @@ Grouping by multiple fields
         "day" ASC,
         "DOLocationID" ASC
     LIMIT 100;
+```
 
 ## Terraform
 
