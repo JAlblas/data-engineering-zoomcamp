@@ -502,6 +502,44 @@ Now build the image again and run it with the added argument:
 
 Also make sure the network fits the network created by the docker compose up command.
 
+### Bonus:
+
+It is also possible to run the ETL script through docker compose. It could look something like this:
+
+    services:
+    pgdatabase:
+        image: postgres:13
+        environment:
+        - POSTGRES_USER=root
+        - POSTGRES_PASSWORD=root
+        - POSTGRES_DB=ny_taxi
+        volumes:
+        - "./ny_taxi_postgres_data:/var/lib/postgresql/data:rw"
+        ports:
+        - "5432:5432"
+    pgadmin:
+        image: dpage/pgadmin4
+        environment:
+        - PGADMIN_DEFAULT_EMAIL=admin@admin.com
+        - PGADMIN_DEFAULT_PASSWORD=root
+        volumes:
+        - "./private/var/lib/pgadmin:/var/lib/pgadmin"
+        ports:
+        - "8080:80"
+    taxi_ingest:
+        image: taxi_ingest:v001
+        depends_on:
+        - pgdatabase
+        command: >
+        --user=root
+        --password=root
+        --host=pgdatabase
+        --port=5432
+        --db=ny_taxi
+        --table_name=zones
+        --url=https://d37ci6vzurychx.cloudfront.net/misc/taxi_zone_lookup.csv
+        --zipped=n
+
 ## SQL Refresher
 
 Joining Yellow Taxi table with Zones Lookup table (implicit INNER JOIN)
