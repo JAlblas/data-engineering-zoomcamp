@@ -854,16 +854,3 @@ For this course, we'll use a free version (upto EUR 300 credits).
   export GOOGLE_APPLICATION_CREDENTIALS="<path/to/your/service-account-authkeys>.json"
 - Create terraform files
 - terraform init, terraform plan, terraform apply,
-
-## DELETE?
-
-- ?
-
-Enable these APIs for your project:
-
-- https://console.cloud.google.com/apis/library/iam.googleapis.com
-- https://console.cloud.google.com/apis/library/iamcredentials.googleapis.com
-
-Please ensure GOOGLE_APPLICATION_CREDENTIALS env-var is set.
-
-export GOOGLE_APPLICATION_CREDENTIALS="<path/to/your/service-account-authkeys>.json"

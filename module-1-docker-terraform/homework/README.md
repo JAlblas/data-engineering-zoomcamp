@@ -84,6 +84,33 @@ volumes:
 
 If there are more than one answers, select only one of them
 
+### Answer
+
+The correct hostname and port that pgAdmin should use to connect to the Postgres database from within the Docker Compose network is:
+
+db:5432
+
+Here's why:
+In Docker Compose, all services are on the same default network unless specified otherwise.
+
+The hostname is the service name (db) — not the container name (postgres) when connecting from another container.
+
+The internal port for the Postgres container is still 5432 (Postgres default).
+
+The line - "5433:5432" means:
+
+5433 is the port exposed to your host machine.
+5432 is the port inside the container.
+
+pgAdmin runs inside the Compose network, so it should connect to:
+
+host: db
+port: 5432
+
+So the correct answer is:
+
+**db:5432**
+
 ## Prepare Postgres
 
 Run Postgres and load data as shown in the videos
@@ -104,6 +131,19 @@ Download this data and put it into Postgres.
 You can use the code from the course. It's up to you whether
 you want to use Jupyter or a python script.
 
+### My steps
+
+I used the following command after editing my docker compose yaml file:
+
+    docker compose -f docker-compose-incl-script.yaml up
+
+But I slightly had to change the ingest_data.py file since the datetime column have a slightly different name:
+
+```py
+    df.lpep_pickup_datetime = pd.to_datetime(df.lpep_pickup_datetime)
+    df.lpep_pickup_datetime = pd.to_datetime(df.lpep_pickup_datetime)
+```
+
 ## Question 3. Trip Segmentation Count
 
 During the period of October 1st 2019 (inclusive) and November 1st 2019 (exclusive), how many trips, **respectively**, happened:
@@ -122,6 +162,33 @@ Answers:
 - 104,793; 202,661; 109,603; 27,678; 35,189
 - 104,838; 199,013; 109,645; 27,688; 35,202
 
+### Answer
+
+1. SELECT \* FROM public."green_tripdata_2019-10"
+   WHERE trip_distance <= 1
+
+#### 104,838
+
+2. SELECT \* FROM public."green_tripdata_2019-10"
+   WHERE trip_distance > 1 AND trip_distance <= 3
+
+#### 199,013
+
+3. SELECT \* FROM public."green_tripdata_2019-10"
+   WHERE trip_distance > 3 AND trip_distance <= 7
+
+#### 109,645
+
+4. SELECT \* FROM public."green_tripdata_2019-10"
+   WHERE trip_distance > 7 AND trip_distance <= 10
+
+#### 27,688
+
+5. SELECT \* FROM public."green_tripdata_2019-10"
+   WHERE trip_distance > 10
+
+#### 35,202
+
 ## Question 4. Longest trip for each day
 
 Which was the pick up day with the longest trip distance?
@@ -134,6 +201,16 @@ Tip: For every day, we only care about one single trip with the longest distance
 - 2019-10-26
 - 2019-10-31
 
+### Answer
+
+```sql
+SELECT lpep_pickup_datetime, max(trip_distance) as longest_trip FROM "green_tripdata_2019-10"
+group by lpep_pickup_datetime
+ORDER BY longest_trip DESC
+```
+
+#### 2019-10-31
+
 ## Question 5. Three biggest pickup zones
 
 Which were the top pickup locations with over 13,000 in
@@ -145,6 +222,18 @@ Consider only `lpep_pickup_datetime` when filtering by date.
 - East Harlem North, Morningside Heights
 - Morningside Heights, Astoria Park, East Harlem South
 - Bedford, East Harlem North, Astoria Park
+
+### Answer
+
+```sql
+SELECT SUM(total_amount) as total_sum, z."Zone" FROM "green_tripdata_2019-10" as g
+LEFT JOIN zones as z ON z."LocationID" = g."PULocationID"
+WHERE date(lpep_pickup_datetime) = '2019-10-18'
+GROUP BY z."Zone"
+ORDER BY total_sum DESC;
+```
+
+#### East Harlem North, East Harlem South, Morningside Heights
 
 ## Question 6. Largest tip
 
@@ -160,6 +249,18 @@ We need the name of the zone, not the ID.
 - JFK Airport
 - East Harlem North
 - East Harlem South
+
+### Answer
+
+```sql
+SELECT g.tip_amount, pic."Zone" as "Pickup Zone", dro."Zone" as "Drop of zone"
+FROM "green_tripdata_2019-10" as g
+LEFT JOIN zones as pic ON pic."LocationID" = g."PULocationID"
+LEFT JOIN zones as dro ON dro."LocationID" = g."DOLocationID"
+WHERE pic."Zone" = 'East Harlem North'
+ORDER BY g.tip_amount DESC
+LIMIT 1;
+```
 
 ## Terraform
 
