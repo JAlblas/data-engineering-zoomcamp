@@ -272,6 +272,10 @@ Copy the files from the course repo
 
 Modify the files as necessary to create a GCP Bucket and Big Query Dataset.
 
+### Note:
+
+See the ../terraform folder for the config files to create a GCP bucket and BQ dataset.
+
 ## Question 7. Terraform Workflow
 
 Which of the following sequences, **respectively**, describes the workflow for:
@@ -287,6 +291,10 @@ Answers:
 - terraform init, terraform run -auto-approve, terraform destroy
 - terraform init, terraform apply -auto-approve, terraform destroy
 - terraform import, terraform apply -y, terraform rm
+
+### Answer:
+
+terraform init, terraform apply -auto-approve, terraform destroy
 
 ## Submitting the solutions
 
