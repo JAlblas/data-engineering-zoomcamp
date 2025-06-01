@@ -23,4 +23,4 @@ with local_workflow:
         bash_command='echo "hello world"'
     )
 
-    wget >> ingest_task
+    wget_task >> ingest_task
