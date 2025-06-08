@@ -6,6 +6,8 @@ from airflow import DAG
 from airflow.operators.bash import BashOperator
 from airflow.operators.python import PythonOperator
 
+from ingest_script import ingest_callable
+
 AIRFLOW_HOME = os.environ.get("AIRFLOW_HOME", "/opt/airflow/")
 
 local_workflow = DAG(
@@ -25,9 +27,11 @@ with local_workflow:
          bash_command=f'curl -sSL {URL_TEMPLATE} > {OUTPUT_FILE_TEMPLATE}'
     )
 
-    ingest_task = BashOperator(
-        task_id='ingest',
-        bash_command=f'ls {AIRFLOW_HOME} '
+    ingest_task = PythonOperator(
+        task_id='ingest_callable',
+        op_args={
+
+        }
     )
 
     wget_task >> ingest_task
