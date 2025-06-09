@@ -9,6 +9,8 @@ services:
       - "./ny_taxi_postgres_data:/var/lib/postgresql/data:rw"
     ports:
       - "5432:5432"
+    networks:
+      - airflow
   pgadmin:
     image: dpage/pgadmin4
     environment:
@@ -17,4 +19,11 @@ services:
     volumes:
       - "./private/var/lib/pgadmin:/var/lib/pgadmin"
     ports:
-      - "8080:80"
+      - "8081:80"
+    networks:
+      - airflow
+
+networks:
+  airflow:
+    external:
+      name: airflow_default

@@ -74,12 +74,11 @@ x-airflow-common: &airflow-common
     # The following line can be used to set a custom config file, stored in the local config folder
     AIRFLOW_CONFIG: "/opt/airflow/config/airflow.cfg"
 
-    PG_HOST: "${PGHOST}"
-    POSTGRES_USER: "${POSTGRES_USER}"
-    POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
+    PG_HOST: "${PG_HOST}"
+    PG_USER: "${PG_USER}"
+    PG_PASSWORD: "${PG_PASSWORD}"
     PG_PORT: "${PG_PORT}"
-    POSTGRES_DB: "${POSTGRES_DB}"
-
+    PG_DATABASE: "${PG_DATABASE}"
   volumes:
     - ${AIRFLOW_PROJ_DIR:-.}/dags:/opt/airflow/dags
     - ${AIRFLOW_PROJ_DIR:-.}/logs:/opt/airflow/logs
