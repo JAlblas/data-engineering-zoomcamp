@@ -19,7 +19,8 @@ AIRFLOW_HOME = os.environ.get("AIRFLOW_HOME", "/opt/airflow/")
 local_workflow = DAG(
     "LocalIngestionDAG",
     schedule="0 6 2 * *",
-    start_date=datetime(2019, 1, 1)
+    start_date=datetime(2019, 1, 1),
+    catchup=True
 )
 
 URL_PREFIX = 'https://d37ci6vzurychx.cloudfront.net/trip-data' 
