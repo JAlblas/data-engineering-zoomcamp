@@ -3,6 +3,8 @@ import pandas as pd
 import pyarrow.parquet as pq
 from sqlalchemy import create_engine
 
+from google.cloud import storage
+
 
 def ingest_callable(user, password, host, port, db, table_name, file, **context):
     print("Starting ingest_callable", flush=True)
@@ -41,3 +43,9 @@ def ingest_callable(user, password, host, port, db, table_name, file, **context)
     print(f'Inserted total {total_rows} rows, took {t_end - t_start:.2f} seconds')
 
     conn.close()
+
+def upload_to_gcs(bucket, object_name, local_file):
+    client = storage.Client()
+    bucket = client.bucket(bucket)
+    blob = bucket.blob(object_name)
+    blob.upload_from_filename(local_file)   
